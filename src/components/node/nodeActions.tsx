@@ -45,30 +45,3 @@ export const NodeActions = ({ id }: Props) => {
 </div>
   )
 }
-
-// import { useGraphStore } from "../../store/useGraphStore"
-// import { Button } from "../ui/button"
-
-// type Props = {
-//   id: string
-// }
-
-// export const NodeActions = ({ id }: Props) => {
-//   const addNode = useGraphStore((s) => s.addNode)
-//   const addEdge = useGraphStore((s) => s.addEdge)
-//   const deleteNode = useGraphStore((s) => s.deleteNode)
-
-//   const handleAddChild = () => {
-//     const childId = addNode()
-//     addEdge(id, childId)
-//   }
-
-//   return (
-//     <div className="flex gap-2">
-//       <Button onClick={handleAddChild}>+ Child</Button>
-//       <Button onClick={() => deleteNode(id)}>Delete</Button>
-//     </div>
-//   )
-// }
-
-

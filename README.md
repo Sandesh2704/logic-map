@@ -1,77 +1,148 @@
-<<<<<<< HEAD
-# logic-map
-=======
-# React + TypeScript + Vite
+## 🧠 Data Structure & Cycle Detection
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### 1. Data Structure Choice: Normalized (Not Nested)
 
-Currently, two official plugins are available:
+I used a **normalized graph structure** instead of a nested tree.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+#### Structure
 
-## React Compiler
+```ts
+nodes: {
+  [id]: {
+    id: string
+    position: { x: number; y: number }
+    condition: string
+  }
+}
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+edges: {
+  id: string
+  from: string
+  to: string
+}[]
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+#### Why NOT Nested?
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+A nested structure (tree-like) fails for real graph use cases:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+* ❌ Cannot handle multiple parents (DAG breaks)
+* ❌ Hard to update deep nodes (O(n) traversal)
+* ❌ Edge management becomes implicit and messy
+* ❌ Cycle detection becomes complex and inefficient
+
+#### Why Normalized Works Better
+
+* ✅ O(1) access to any node
+* ✅ Explicit edge control (clear graph relationships)
+* ✅ Easy to add/remove/update nodes
+* ✅ Scales to large graphs
+* ✅ Works with React Flow naturally
+
+This matches how real systems (like DAG engines, workflow builders, n8n) manage graph data.
+
+---
+
+### 2. Cycle Detection Algorithm
+
+Cycle detection is implemented using **Depth-First Search (DFS)**.
+
+#### Core Idea
+
+Track traversal using:
+
+* `visited` → nodes already processed
+* `recStack` → current DFS path
+
+If a node is revisited while still in `recStack`, a cycle exists.
+
+#### Implementation
+
+```ts
+const detectCycles = (nodes, edges) => {
+  const visited = new Set<string>()
+  const recStack = new Set<string>()
+  const cycleNodes = new Set<string>()
+
+  const adjacency = {}
+
+  edges.forEach((e) => {
+    if (!adjacency[e.from]) adjacency[e.from] = []
+    adjacency[e.from].push(e.to)
+  })
+
+  const dfs = (nodeId: string) => {
+    if (recStack.has(nodeId)) {
+      cycleNodes.add(nodeId)
+      return true
+    }
+
+    if (visited.has(nodeId)) return false
+
+    visited.add(nodeId)
+    recStack.add(nodeId)
+
+    const neighbors = adjacency[nodeId] || []
+
+    for (const neighbor of neighbors) {
+      if (dfs(neighbor)) {
+        cycleNodes.add(nodeId)
+        return true
+      }
+    }
+
+    recStack.delete(nodeId)
+    return false
+  }
+
+  Object.keys(nodes).forEach((id) => {
+    if (!visited.has(id)) dfs(id)
+  })
+
+  return cycleNodes
+}
 ```
->>>>>>> a36fb61 (initial commit)
+
+---
+
+### 3. Why DFS (and not BFS / brute force)
+
+* DFS is optimal for cycle detection in directed graphs
+* Time Complexity: **O(V + E)**
+* Minimal memory overhead
+* Easy to track path using recursion stack
+
+---
+
+### 4. Integration with UI
+
+* Cycle nodes are stored in a `Set`
+* Each node checks: `isCycle = cycleNodes.has(node.id)`
+* UI highlights cycle nodes (red border / warning icon)
+
+---
+
+
+### 5. Key Design Decisions
+
+* Graph stored in Zustand (with persistence)
+* Separation of nodes & edges (normalized)
+* UI (React Flow) is derived from store → single source of truth
+* Cycle detection runs as a derived computation (not stored permanently)
+
+---
+
+### 6. Limitations
+
+* LocalStorage persistence → not suitable for very large graphs
+* DFS recalculates on every change (can be optimized with memoization)
+* No server sync (currently client-only)
+
+---
+
+### 7. Future Improvements
+
+* Incremental cycle detection (instead of full recompute)
+* Graph validation rules (prevent invalid edges before adding)
+* Backend persistence (save/load workflows)
+* Auto layout (Dagre / ELK)

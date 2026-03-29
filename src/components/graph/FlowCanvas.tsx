@@ -3,7 +3,6 @@ import ReactFlow, {
   Background,
   Controls as FlowControls,
   MiniMap,
-  // applyNodeChanges,
   type NodeChange,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
@@ -16,8 +15,7 @@ export const FlowCanvas = () => {
   const nodes = useGraphStore((s) => s.nodes)
   const edges = useGraphStore((s) => s.edges)
   const addEdge = useGraphStore((s) => s.addEdge)
-  // const setNodes = useGraphStore((s: any) => s.setNodes) 
-  const updateNodePosition = useGraphStore((s) => s.updateNodePosition) // Add this
+  const updateNodePosition = useGraphStore((s) => s.updateNodePosition) 
 
   const { cycleNodes } = useCycleValidation()
 
@@ -51,12 +49,11 @@ export const FlowCanvas = () => {
   }
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    // Filter only position changes
+
     const positionChanges = changes.filter(
       (change) => change.type === 'position' && change.position
     )
     
-    // Update each node's position individually
     positionChanges.forEach((change) => {
       if (change.type === 'position' && change.position && change.id) {
         updateNodePosition(change.id, change.position)
